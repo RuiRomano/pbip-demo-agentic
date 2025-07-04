@@ -26,7 +26,7 @@ In Power BI, this is made possible by open file formats with [Power BI Project f
 
 6. Review the generated development spec, then prompt Copilot to proceed with implementing the semantic model.
 
-See the branch [ai-development](https://github.com/RuiRomano/pbip-demo-agentic/tree/ai-development) for an example of what was built by Github Copilot.
+See the branch [ai-agent](https://github.com/RuiRomano/pbip-demo-agentic/tree/ai-agent) for an example of what was built by Github Copilot.
 
 > 📌 **Notes** 
 > - The [kb-pbip.md](.resources/kb-pbip.md) file includes important knowledge base that AI will use to better understand PBIP file structure and TMDL.
