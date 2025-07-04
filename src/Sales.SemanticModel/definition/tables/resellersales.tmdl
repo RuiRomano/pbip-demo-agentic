@@ -1,0 +1,133 @@
+table resellersales
+	lineageTag: cbc6b5fd-d5a5-484c-8879-7fdad04c0b52
+
+	/// Total sales amount from reseller channel
+	measure 'Reseller Sales Amount' = SUM(resellersales[sales amount])
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 664f5bfd-f60d-4a6e-a5e0-2c5875696739
+
+	/// Total quantity sold through reseller channel
+	measure 'Reseller Sales Quantity' = SUM(resellersales[order quantity])
+		formatString: #,0
+		lineageTag: f1a453da-877d-458a-ae56-4bad84f96af8
+
+	column 'sales order number'
+		dataType: string
+		lineageTag: fba6b1b9-ef15-4bb7-aabf-baa15cc26c57
+		summarizeBy: none
+		sourceColumn: SalesOrderNumber
+
+	column 'sales order line number'
+		dataType: int64
+		formatString: 0
+		lineageTag: b77ab3ce-11fc-42cc-8ff3-ef92a8176a29
+		summarizeBy: none
+		sourceColumn: SalesOrderLineNumber
+
+	column 'product key'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 0dcb0adb-e006-40e3-ad70-26d9bee64083
+		summarizeBy: none
+		sourceColumn: ProductKey
+
+	column 'reseller key'
+		dataType: int64
+		formatString: 0
+		lineageTag: d499bcbb-3dfb-405c-8ba4-11bd10390708
+		summarizeBy: none
+		sourceColumn: ResellerKey
+
+	column 'order date'
+		dataType: dateTime
+		isHidden
+		formatString: Short Date
+		lineageTag: 26c36c42-bcc8-40ee-990e-e36d72eb4c0e
+		summarizeBy: none
+		sourceColumn: OrderDate
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'order quantity'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: b733512e-21ca-43e8-bc4c-29f5508fb4e3
+		summarizeBy: sum
+		sourceColumn: OrderQuantity
+
+	column 'unit price'
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 3ba98772-f1f6-4841-898e-2ef15b83b3ef
+		summarizeBy: sum
+		sourceColumn: UnitPrice
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'sales amount'
+		dataType: double
+		isHidden
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 83fb3293-dd1e-4c3f-90c2-f093f7a67a46
+		summarizeBy: sum
+		sourceColumn: SalesAmount
+
+	column 'discount amount'
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 3156e39a-d63a-40a9-92f4-b22c19a31d7b
+		summarizeBy: sum
+		sourceColumn: DiscountAmount
+
+	partition resellersales = m
+		mode: import
+		source = ```
+				let
+						Source = Sql.Database(#"Parameter_Server", #"Parameter_Database"),
+						FactResellerSales = Source{[Schema="dbo",Item="FactResellerSales"]}[Data],
+						
+						// Add OrderDate calculated column from OrderDateKey
+						AddOrderDate = Table.AddColumn(FactResellerSales, "OrderDate", each
+							let
+								DateKey = [OrderDateKey],
+								Year = Number.IntegerDivide(DateKey, 10000),
+								Month = Number.IntegerDivide(Number.Mod(DateKey, 10000), 100),
+								Day = Number.Mod(DateKey, 100)
+							in
+								#date(Year, Month, Day)
+						),
+						
+						// Select essential columns
+						SelectColumns = Table.SelectColumns(AddOrderDate, {
+							"SalesOrderNumber",
+							"SalesOrderLineNumber", 
+							"ProductKey",
+							"ResellerKey",
+							"OrderDate",
+							"OrderQuantity",
+							"UnitPrice",
+							"SalesAmount",
+							"DiscountAmount"
+						}),
+						
+						#"Changed Type" = Table.TransformColumnTypes(SelectColumns, {
+							{"SalesOrderNumber", type text},
+							{"SalesOrderLineNumber", Int64.Type},
+							{"ProductKey", Int64.Type},
+							{"ResellerKey", Int64.Type},
+							{"OrderDate", type date},
+							{"OrderQuantity", Int64.Type},
+							{"UnitPrice", type number},
+							{"SalesAmount", type number},
+							{"DiscountAmount", type number}
+						})
+					in
+						#"Changed Type"
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

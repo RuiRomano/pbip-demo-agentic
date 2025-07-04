@@ -1,0 +1,24 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_ProTooling = ["TMDL-Extension","DevMode"]
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBIDesktopVersion = 2.145.776.0 (25.07)+a60592270b72f7359f0444fa5397f751b9128bab
+
+annotation PBI_QueryOrder = ["calendar","customer","internetsales","product","resellersales","Parameter_Server","Parameter_Database"]
+
+ref table calendar
+ref table customer
+ref table internetsales
+ref table product
+ref table resellersales
+
+ref cultureInfo en-US
+

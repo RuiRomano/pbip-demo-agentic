@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 0,
+        "y": 0
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 119.70288944803232,
+            "y": 29.150403467655664
+          },
+          "nodeIndex": "calendar",
+          "nodeLineageTag": "783e8b41-263f-4cb5-b47a-97c0717b8ff5",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 535.91129527825342,
+            "y": 25.786895375233851
+          },
+          "nodeIndex": "customer",
+          "nodeLineageTag": "133df23a-a4ea-4788-b657-a4c2d6b9d3e5",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 614.69658478759288,
+            "y": 414.99664426506922
+          },
+          "nodeIndex": "internetsales",
+          "nodeLineageTag": "5163fcc5-d145-4f5d-9244-039931a092a5",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 930.06864233481508,
+            "y": 100.58378182370245
+          },
+          "nodeIndex": "product",
+          "nodeLineageTag": "ecaddd47-a51f-4e3c-b4f8-d5cbc6844dca",
+          "size": {
+            "height": 272,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 323.565324850307,
+            "y": 419.219640532706
+          },
+          "nodeIndex": "resellersales",
+          "nodeLineageTag": "cbc6b5fd-d5a5-484c-8879-7fdad04c0b52",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        }
+      ],
+      "name": "All tables",
+      "zoomValue": 89.192590520569482,
+      "pinKeyFieldsToTop": false,
+      "showExtraHeaderInfo": false,
+      "hideKeyFieldsWhenCollapsed": false,
+      "tablesLocked": false
+    }
+  ],
+  "selectedDiagram": "All tables",
+  "defaultDiagram": "All tables"
+}

@@ -96,7 +96,7 @@ table Calendar
 		source = ```
 				let
 					P_Today = DateTime.LocalNow(),
-					StartDate = #date(Date.Year(P_Today) - 3, 1, 1),
+					StartDate = #date(2017, 1, 1),
 					EndDate = #date(Date.Year(P_Today), 12, 31),
 					// Generate a list of dates
 					DateList = List.Dates(StartDate, Duration.Days(EndDate - StartDate) + 1, #duration(1, 0, 0, 0)),

@@ -1,0 +1,20 @@
+relationship internetsales-calendar
+	fromColumn: internetsales.'order date'
+	toColumn: calendar.date
+
+relationship resellersales-calendar
+	fromColumn: resellersales.'order date'
+	toColumn: calendar.date
+
+relationship internetsales-product
+	fromColumn: internetsales.'product key'
+	toColumn: product.'product key'
+
+relationship resellersales-product
+	fromColumn: resellersales.'product key'
+	toColumn: product.'product key'
+
+relationship internetsales-customer
+	fromColumn: internetsales.'customer key'
+	toColumn: customer.'customer key'
+

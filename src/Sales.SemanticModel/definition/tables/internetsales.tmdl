@@ -1,0 +1,169 @@
+table internetsales
+	lineageTag: 5163fcc5-d145-4f5d-9244-039931a092a5
+
+	/// Total sales amount from internet channel
+	measure 'Internet Sales Amount' = SUM(internetsales[sales amount])
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 09530f00-a96b-4888-8ec3-ebc8698f7166
+
+	/// Total quantity sold through internet channel
+	measure 'Internet Sales Quantity' = SUM(internetsales[order quantity])
+		formatString: #,0
+		lineageTag: afcee0bd-f9a2-4919-a20b-a5d241c3e2c1
+
+	/// Combined total sales amount across all channels (Internet + Reseller)
+	measure 'Total Sales Amount' = [Internet Sales Amount] + [Reseller Sales Amount]
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 2dfdfbff-5957-4b26-ac79-eaeb01eb7621
+
+	/// Combined total quantity sold across all channels
+	measure 'Total Sales Quantity' = [Internet Sales Quantity] + [Reseller Sales Quantity]
+		formatString: #,0
+		lineageTag: fefc40b0-5066-4bf0-9ec7-e84a9d130ccf
+
+	/// Total sales amount for the same period last year
+	measure 'Total Sales Amount (ly)' = CALCULATE([Total Sales Amount], SAMEPERIODLASTYEAR(calendar[date]))
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 91fd62e7-f3e6-4bf7-a55c-276c74aabb8c
+
+	/// Year-over-year sales growth percentage
+	measure 'Sales YoY Growth %' = DIVIDE([Total Sales Amount] - [Total Sales Amount (ly)], [Total Sales Amount (ly)])
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 1abf2fc1-e2ed-4662-988a-2b228229f884
+
+	/// Total sales amount for the previous month
+	measure 'Total Sales Amount (pm)' = CALCULATE([Total Sales Amount], PREVIOUSMONTH(calendar[date]))
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 4807b4c5-e2d8-4a30-bd29-f258e1574c67
+
+	/// Month-over-month sales growth percentage
+	measure 'Sales MoM Growth %' = DIVIDE([Total Sales Amount] - [Total Sales Amount (pm)], [Total Sales Amount (pm)])
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 0146c836-f78e-457d-aade-4cf40cdcb4eb
+
+	/// Ranking of products by total sales amount (descending)
+	measure 'Product Sales Rank' = RANKX(ALL(product[product]), [Total Sales Amount], , DESC)
+		formatString: 0
+		lineageTag: 0687660c-eb65-4a14-ac37-5087774d73bb
+
+	column 'sales order number'
+		dataType: string
+		lineageTag: 4630b887-8ea5-4c91-a7d3-274da4006939
+		summarizeBy: none
+		sourceColumn: SalesOrderNumber
+
+	column 'sales order line number'
+		dataType: int64
+		formatString: 0
+		lineageTag: bdd78eba-3181-4d13-992c-0bbdda5c570d
+		summarizeBy: none
+		sourceColumn: SalesOrderLineNumber
+
+	column 'product key'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 93bb55fd-0c8c-4a23-bd57-8e5426b78290
+		summarizeBy: none
+		sourceColumn: ProductKey
+
+	column 'customer key'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 34eabaa1-36b1-4e83-8e0a-9d894db48c36
+		summarizeBy: none
+		sourceColumn: CustomerKey
+
+	column 'order date'
+		dataType: dateTime
+		isHidden
+		formatString: Short Date
+		lineageTag: fad0963b-d83f-4b3e-9aac-cd3f7ea856f5
+		summarizeBy: none
+		sourceColumn: OrderDate
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'order quantity'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 5c5f61d6-7793-46ae-9dc9-06faf274c2a2
+		summarizeBy: sum
+		sourceColumn: OrderQuantity
+
+	column 'unit price'
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 143c2105-1815-4b67-b0da-696d3ee3c9ff
+		summarizeBy: sum
+		sourceColumn: UnitPrice
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'sales amount'
+		dataType: double
+		isHidden
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 257b1572-7485-411b-a0d2-219d7332c555
+		summarizeBy: sum
+		sourceColumn: SalesAmount
+
+	column 'discount amount'
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 5cb96524-bab5-4538-b3be-85f9fd586cab
+		summarizeBy: sum
+		sourceColumn: DiscountAmount
+
+	partition internetsales = m
+		mode: import
+		source = ```
+				let
+						Source = Sql.Database(#"Parameter_Server", #"Parameter_Database"),
+						FactInternetSales = Source{[Schema="dbo",Item="FactInternetSales"]}[Data],
+						
+						// Add OrderDate calculated column from OrderDateKey
+						AddOrderDate = Table.AddColumn(FactInternetSales, "OrderDate", each
+							let
+								DateKey = [OrderDateKey],
+								Year = Number.IntegerDivide(DateKey, 10000),
+								Month = Number.IntegerDivide(Number.Mod(DateKey, 10000), 100),
+								Day = Number.Mod(DateKey, 100)
+							in
+								#date(Year, Month, Day)
+						),
+						
+						// Select essential columns
+						SelectColumns = Table.SelectColumns(AddOrderDate, {
+							"SalesOrderNumber",
+							"SalesOrderLineNumber", 
+							"ProductKey",
+							"CustomerKey",
+							"OrderDate",
+							"OrderQuantity",
+							"UnitPrice",
+							"SalesAmount",
+							"DiscountAmount"
+						}),
+						
+						#"Changed Type" = Table.TransformColumnTypes(SelectColumns, {
+							{"SalesOrderNumber", type text},
+							{"SalesOrderLineNumber", Int64.Type},
+							{"ProductKey", Int64.Type},
+							{"CustomerKey", Int64.Type},
+							{"OrderDate", type date},
+							{"OrderQuantity", Int64.Type},
+							{"UnitPrice", type number},
+							{"SalesAmount", type number},
+							{"DiscountAmount", type number}
+						})
+					in
+						#"Changed Type"
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

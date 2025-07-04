@@ -1,0 +1,134 @@
+table calendar
+	lineageTag: 783e8b41-263f-4cb5-b47a-97c0717b8ff5
+	dataCategory: Time
+
+	column day
+		dataType: int64
+		formatString: 0
+		lineageTag: b0869c36-11df-4141-b92a-a30ff2eea11c
+		summarizeBy: none
+		sourceColumn: Day
+
+	column month
+		dataType: int64
+		formatString: 0
+		lineageTag: 74036221-09c9-4ff4-bbd1-3064e42cd2b2
+		summarizeBy: none
+		sourceColumn: Month
+
+	column quarter
+		dataType: string
+		lineageTag: 7da347f2-b2c7-4ee0-b04f-12f0a71ad454
+		summarizeBy: none
+		sourceColumn: Quarter
+
+	column year
+		dataType: int64
+		formatString: 0
+		lineageTag: 6f4bb171-e4e6-4df4-86cd-ea09dad73f5f
+		summarizeBy: none
+		sourceColumn: Year
+
+	column date
+		dataType: dateTime
+		isKey
+		formatString: Long Date
+		lineageTag: f8001465-140c-495e-98cd-84cc2bb6f9d5
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'month name'
+		dataType: string
+		lineageTag: 3671b5fa-4a39-48e4-932c-b0e88b51d025
+		summarizeBy: none
+		sourceColumn: Month Name
+		sortByColumn: month
+
+	column year-month
+		dataType: dateTime
+		formatString: mmm yyyy
+		lineageTag: d26f5299-9ffd-43b2-9115-37a21edfc3f3
+		summarizeBy: none
+		sourceColumn: Year-Month
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'week number'
+		dataType: int64
+		formatString: 0
+		lineageTag: 077a0403-1d64-4be4-af33-347e14ce2bd5
+		summarizeBy: none
+		sourceColumn: Week Number
+
+	column 'day of week'
+		dataType: int64
+		formatString: 0
+		lineageTag: 203cc3ee-9c05-423c-a763-8069fabddaba
+		summarizeBy: none
+		sourceColumn: Day of Week
+
+	column 'day name'
+		dataType: string
+		lineageTag: 8d815f7f-070f-4f5c-bda7-cb5c8682fc4d
+		summarizeBy: none
+		sourceColumn: Day Name
+		sortByColumn: 'day of week'
+
+	column 'fiscal quarter'
+		dataType: string
+		lineageTag: b8f07297-edd1-4c48-8102-e7c8e255d066
+		summarizeBy: none
+		sourceColumn: Fiscal Quarter
+
+	partition calendar = m
+		mode: import
+		source =
+				let
+						P_Today = DateTime.LocalNow(),
+						StartDate = #date(2017, 1, 1),
+						EndDate = #date(2020, 12, 31),
+						// Generate a list of dates
+						DateList = List.Dates(StartDate, Duration.Days(EndDate - StartDate) + 1, #duration(1, 0, 0, 0)),
+						// Convert list to a table
+						Calendar = Table.FromList(DateList, Splitter.SplitByNothing(), {"Date"}),
+						// Add columns for different date attributes
+						AddYear = Table.AddColumn(Calendar, "Year", each Date.Year([Date])),
+						AddMonth = Table.AddColumn(AddYear, "Month", each Date.Month([Date])),
+						AddDay = Table.AddColumn(AddMonth, "Day", each Date.Day([Date])),
+						AddMonthName = Table.AddColumn(AddDay, "Month Name", each Date.ToText([Date], "MMM")),
+						AddYearMonth = Table.AddColumn(
+							AddMonthName, "Year-Month", each Text.From(Date.Year([Date])) & " " & Date.ToText([Date], "MMM")
+						),
+						AddQuarter = Table.AddColumn(AddYearMonth, "Quarter", each "Q" & Text.From(Date.QuarterOfYear([Date]))),
+						AddWeek = Table.AddColumn(AddQuarter, "Week Number", each Date.WeekOfYear([Date])),
+						AddDayOfWeek = Table.AddColumn(AddWeek, "Day of Week", each Date.DayOfWeek([Date]) + 1),
+						AddDayName = Table.AddColumn(AddDayOfWeek, "Day Name", each Date.ToText([Date], "dddd")),
+						// Add fiscal quarter
+						AddFiscalQuarter = Table.AddColumn(
+							AddDayName, "Fiscal Quarter", each "FQ" & Text.From(Number.IntegerDivide((Date.Month([Date]) + 5), 3))
+						),
+						#"Changed Type" = Table.TransformColumnTypes(
+							AddFiscalQuarter,
+							{
+								{"Date", type date},
+								{"Year", Int64.Type},
+								{"Month", Int64.Type},
+								{"Day", Int64.Type},
+								{"Month Name", type text},
+								{"Year-Month", type date},
+								{"Quarter", type text},
+								{"Week Number", Int64.Type},
+								{"Day of Week", Int64.Type},
+								{"Day Name", type text},
+								{"Fiscal Quarter", type text}
+							}
+						)
+					in
+						#"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

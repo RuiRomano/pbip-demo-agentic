@@ -1,0 +1,14 @@
+expression Parameter_Server = "dummyserver.database.windows.net" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 2fefae41-e635-44d6-930a-5285e9424221
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Text
+
+expression Parameter_Database = "AdventureWorksDW" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 508935be-be83-44e4-9832-70fafaf8342c
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Text
+

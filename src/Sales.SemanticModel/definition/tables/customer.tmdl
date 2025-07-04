@@ -1,0 +1,136 @@
+table customer
+	lineageTag: 133df23a-a4ea-4788-b657-a4c2d6b9d3e5
+
+	column 'customer key'
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		lineageTag: 97a7e48f-9916-4d10-a264-ff8bd175c0d5
+		summarizeBy: none
+		sourceColumn: CustomerKey
+
+	column customer
+		dataType: string
+		lineageTag: 084cddf2-81f0-4406-91f5-e63b83ab2782
+		summarizeBy: none
+		sourceColumn: CustomerName
+
+	column 'first name'
+		dataType: string
+		lineageTag: 38252fa5-533f-4569-908b-dace30773543
+		summarizeBy: none
+		sourceColumn: FirstName
+
+	column 'last name'
+		dataType: string
+		lineageTag: 42f6e0bd-55b9-4571-9c43-41c5ebd75021
+		summarizeBy: none
+		sourceColumn: LastName
+
+	column 'birth date'
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: a45cd033-9f1b-4191-a6a0-41e776dfad3a
+		summarizeBy: none
+		sourceColumn: BirthDate
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'marital status'
+		dataType: string
+		lineageTag: 33d936dd-881a-4728-8028-771c75bbf839
+		summarizeBy: none
+		sourceColumn: MaritalStatus
+
+	column gender
+		dataType: string
+		lineageTag: e4c24703-ed3a-45d1-950d-57bb19782bec
+		summarizeBy: none
+		sourceColumn: Gender
+
+	column 'yearly income'
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 936bffab-796d-4308-91b3-248eadd1c720
+		summarizeBy: sum
+		sourceColumn: YearlyIncome
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'total children'
+		dataType: int64
+		formatString: 0
+		lineageTag: 84bdc995-62c8-47f3-9b7b-b32c5c9c589e
+		summarizeBy: sum
+		sourceColumn: TotalChildren
+
+		annotation SummarizationSetBy = Automatic
+
+	column education
+		dataType: string
+		lineageTag: 8281eeef-68de-43ee-8ac4-23ff6a43c4dd
+		summarizeBy: none
+		sourceColumn: EnglishEducation
+
+	column occupation
+		dataType: string
+		lineageTag: cb4f36ad-6fd9-4e3b-ad65-44b5a74ed19a
+		summarizeBy: none
+		sourceColumn: EnglishOccupation
+
+	partition customer = m
+		mode: import
+		source = ```
+				let
+						Source = Sql.Database(#"Parameter_Server", #"Parameter_Database"),
+						DimCustomer = Source{[Schema="dbo",Item="DimCustomer"]}[Data],
+						
+						// Add calculated customer name column
+						AddCustomerName = Table.AddColumn(DimCustomer, "CustomerName", each 
+							if [FirstName] <> null and [LastName] <> null 
+							then [FirstName] & " " & [LastName] 
+							else [CustomerAlternateKey]
+						),
+						
+						// Select essential columns
+						SelectColumns = Table.SelectColumns(AddCustomerName, {
+							"CustomerKey",
+							"CustomerName",
+							"FirstName",
+							"LastName",
+							"BirthDate",
+							"MaritalStatus",
+							"Gender",
+							"YearlyIncome",
+							"TotalChildren",
+							"EnglishEducation",
+							"EnglishOccupation"
+						}),
+						
+						// Handle null values
+						ReplaceNulls = Table.ReplaceValue(SelectColumns, null, "N/A", Replacer.ReplaceValue, {
+							"FirstName", "LastName", "MaritalStatus", "Gender", "EnglishEducation", "EnglishOccupation"
+						}),
+						
+						#"Changed Type" = Table.TransformColumnTypes(ReplaceNulls, {
+							{"CustomerKey", Int64.Type},
+							{"CustomerName", type text},
+							{"FirstName", type text},
+							{"LastName", type text},
+							{"BirthDate", type date},
+							{"MaritalStatus", type text},
+							{"Gender", type text},
+							{"YearlyIncome", type number},
+							{"TotalChildren", Int64.Type},
+							{"EnglishEducation", type text},
+							{"EnglishOccupation", type text}
+						})
+					in
+						#"Changed Type"
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

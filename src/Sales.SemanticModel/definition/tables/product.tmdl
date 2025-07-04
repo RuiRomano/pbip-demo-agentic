@@ -1,0 +1,107 @@
+table product
+	lineageTag: ecaddd47-a51f-4e3c-b4f8-d5cbc6844dca
+
+	column 'product key'
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		lineageTag: 206db212-f113-4455-91fa-37d7e735da30
+		summarizeBy: none
+		sourceColumn: ProductKey
+
+	column product
+		dataType: string
+		lineageTag: 3480e6ae-f49d-4017-bc6d-2bdf83b2c38e
+		summarizeBy: none
+		sourceColumn: EnglishProductName
+
+	column category
+		dataType: string
+		lineageTag: 76ec8421-69f2-418b-bfa8-be57d2231dc5
+		summarizeBy: none
+		sourceColumn: EnglishProductCategoryName
+
+	column subcategory
+		dataType: string
+		lineageTag: f0772ad0-cbca-49fc-889c-2b105c52a9f5
+		summarizeBy: none
+		sourceColumn: EnglishProductSubcategoryName
+
+	column color
+		dataType: string
+		lineageTag: 0b50f210-4421-4a51-beb4-865ba0d238ea
+		summarizeBy: none
+		sourceColumn: Color
+
+	column 'list price'
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: e658db56-dfb5-4aec-9d15-fe2a75dc1162
+		summarizeBy: sum
+		sourceColumn: ListPrice
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'product line'
+		dataType: string
+		lineageTag: 0751e9bd-f41d-4792-8771-96b8be64025c
+		summarizeBy: none
+		sourceColumn: ProductLine
+
+	column class
+		dataType: string
+		lineageTag: e399cbdb-954b-4718-b222-618e779fe515
+		summarizeBy: none
+		sourceColumn: Class
+
+	partition product = m
+		mode: import
+		source = ```
+				let
+						Source = Sql.Database(#"Parameter_Server", #"Parameter_Database"),
+						DimProduct = Source{[Schema="dbo",Item="DimProduct"]}[Data],
+						DimProductSubcategory = Source{[Schema="dbo",Item="DimProductSubcategory"]}[Data],
+						DimProductCategory = Source{[Schema="dbo",Item="DimProductCategory"]}[Data],
+						
+						// Join Product with Subcategory
+						JoinWithSubcategory = Table.NestedJoin(DimProduct, {"ProductSubcategoryKey"}, DimProductSubcategory, {"ProductSubcategoryKey"}, "Subcategory", JoinKind.LeftOuter),
+						ExpandSubcategory = Table.ExpandTableColumn(JoinWithSubcategory, "Subcategory", {"EnglishProductSubcategoryName", "ProductCategoryKey"}, {"EnglishProductSubcategoryName", "ProductCategoryKey"}),
+						
+						// Join with Category
+						JoinWithCategory = Table.NestedJoin(ExpandSubcategory, {"ProductCategoryKey"}, DimProductCategory, {"ProductCategoryKey"}, "Category", JoinKind.LeftOuter),
+						ExpandCategory = Table.ExpandTableColumn(JoinWithCategory, "Category", {"EnglishProductCategoryName"}, {"EnglishProductCategoryName"}),
+						
+						// Select and rename columns
+						SelectColumns = Table.SelectColumns(ExpandCategory, {
+							"ProductKey", 
+							"EnglishProductName", 
+							"EnglishProductCategoryName", 
+							"EnglishProductSubcategoryName", 
+							"Color", 
+							"ListPrice", 
+							"ProductLine", 
+							"Class"
+						}),
+						
+						// Handle null values
+						ReplaceNulls = Table.ReplaceValue(SelectColumns, null, "N/A", Replacer.ReplaceValue, {"EnglishProductSubcategoryName", "EnglishProductCategoryName", "Color", "ProductLine", "Class"}),
+						
+						#"Changed Type" = Table.TransformColumnTypes(ReplaceNulls, {
+							{"ProductKey", Int64.Type},
+							{"EnglishProductName", type text},
+							{"EnglishProductCategoryName", type text},
+							{"EnglishProductSubcategoryName", type text},
+							{"Color", type text},
+							{"ListPrice", type number},
+							{"ProductLine", type text},
+							{"Class", type text}
+						})
+					in
+						#"Changed Type"
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

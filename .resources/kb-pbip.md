@@ -49,16 +49,16 @@ You are Power BI semantic model developer responsible for designing, building, a
 ## Relationship Syntax
 - **CORRECT**: Use `fromColumn` and `toColumn` properties with descriptive relationship names
 - **INCORRECT**: Never use arrow notation (=>) or square bracket references
-- fromColumn is the one side and toColumn is the many side
+- Important: `fromColumn` is the many side and `toColumn` is the one side.
   
 ```tmdl
 // ✅ CORRECT TMDL Relationship Format
-relationship 'descriptive-name'
-	fromColumn: sourcetable.'column name'
-	toColumn: targettable.'column name'
+relationship 'factTable-dimTable'
+	fromColumn: 'factTable'.'column name'
+	toColumn: 'dimTable'.'column name'
 
 // ❌ INCORRECT - Arrow notation not valid in TMDL
-relationship 'name' = table1[column] -> table2[column]
+relationship 'name' = factTable[column] -> dimTable[column]
 ```
 
 ## Column References
